@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Redirecting...</title>
+</head>
+<body>
+
+<script>
+(function () {
+    const destination = "https://pipoll.live";
+
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+
+    // iPhone / iPod only (NOT iPad, NOT Mac)
+    const isIphone = /iPhone|iPod/i.test(ua);
+
+    // Android detection
+    const isAndroid = /android/i.test(ua);
+
+    if (isIphone) {
+        // iPhone popup
+        confirm("Coming to iOS very soon");
+
+        window.location.href = destination;
+
+    } else {
+        // everything else (Mac, iPad, Windows, Android fallback, etc.)
+
+        if (isAndroid) {
+            window.location.href =
+                "https://play.google.com/store/apps/details?id=com.mycompany.humanstock";
+        } else {
+            window.location.href = destination;
+        }
+    }
+})();
+</script>
+
+<p>Redirecting...</p>
+
+</body>
+</html>
