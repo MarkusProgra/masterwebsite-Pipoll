@@ -3,42 +3,195 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Redirecting...</title>
+  <title>Pipoll — Coming to iOS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    html, body {
+      height: 100%;
+      background: #000;
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #fff;
+    }
+
+    /* Hidden by default — JS shows it only for iPhone */
+    #ios-page {
+      display: none;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 32px 80px;
+      text-align: center;
+    }
+
+    #ios-page.show {
+      display: flex;
+      animation: fadeUp 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 340px;
+      width: 100%;
+    }
+
+    /* ── Apple icon ── */
+    .icon-wrap {
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 44px;
+    }
+
+    .icon-wrap svg {
+      width: 60px;
+      height: 60px;
+      fill: #fff;
+    }
+
+    /* ── Eyebrow ── */
+    .eyebrow {
+      font-size: 10.5px;
+      font-weight: 500;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: #444;
+      margin-bottom: 16px;
+    }
+
+    /* ── Headline ── */
+    h1 {
+      font-size: 34px;
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      color: #fff;
+      margin-bottom: 18px;
+    }
+
+    /* ── Subtext ── */
+    .sub {
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.7;
+      color: #555;
+      margin-bottom: 52px;
+    }
+
+    /* ── Button ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      border-radius: 100px;
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.015em;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.18s ease, border-color 0.18s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:active {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .btn svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+  </style>
 </head>
 <body>
 
-<script>
-(function () {
-    const destination = "https://pipoll.live";
+  <div id="ios-page">
+    <div class="inner">
 
-    const ua = navigator.userAgent || navigator.vendor || window.opera;
+      <!-- Apple logo (inline SVG — no external dependency) -->
+      <div class="icon-wrap">
+        <svg viewBox="0 0 384 512" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6
+                   -35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7
+                   C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2
+                   c12.8 36.7 59 126.7 107.2 125.2
+                   25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9
+                   48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9z
+                   m-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5
+                   -24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9
+                   26.1 2 49.9-11.4 69.5-34.3z"/>
+        </svg>
+      </div>
 
-    // iPhone / iPod only (NOT iPad, NOT Mac)
-    const isIphone = /iPhone|iPod/i.test(ua);
+      <p class="eyebrow">Pipoll</p>
 
-    // Android detection
-    const isAndroid = /android/i.test(ua);
+      <h1>Coming soon<br>to iOS.</h1>
 
-    if (isIphone) {
-        // iPhone popup
-        confirm("Coming to iOS very soon");
+      <p class="sub">
+        We're working on it.<br>
+        In the meantime, explore Pipoll on the web.
+      </p>
 
-        window.location.href = destination;
+      <!-- Globe icon (Feather-style stroke) -->
+      <a href="https://pipoll.live" class="btn">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="2" y1="12" x2="22" y2="12"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10
+                   15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+        Visit Website
+      </a>
 
-    } else {
-        // everything else (Mac, iPad, Windows, Android fallback, etc.)
+    </div>
+  </div>
 
-        if (isAndroid) {
-            window.location.href =
-                "https://play.google.com/store/apps/details?id=com.mycompany.humanstock";
-        } else {
-            window.location.href = destination;
-        }
-    }
-})();
-</script>
+  <script>
+    (function () {
+      var ua = navigator.userAgent || navigator.vendor || window.opera;
+      var isIphone = /iPhone|iPod/i.test(ua);
+      var isAndroid = /android/i.test(ua);
 
-<p>Redirecting...</p>
+      if (isIphone) {
+        // Show the custom iOS page instead of a browser dialog
+        document.getElementById('ios-page').classList.add('show');
+      } else if (isAndroid) {
+        window.location.href =
+          'https://play.google.com/store/apps/details?id=com.mycompany.humanstock';
+      } else {
+        window.location.href = 'https://pipoll.live';
+      }
+    })();
+  </script>
 
 </body>
 </html>
