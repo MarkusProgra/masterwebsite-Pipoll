@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pipoll</title>
+<style>
+html, body {
+height: 100%;
+background: #000;
+margin: 0;
+padding: 0;
+}
+</style>
+</head>
+<body>
+<script>
+(function () {
+var ua = navigator.userAgent || navigator.vendor || window.opera;
+// Apple: macOS (Macintosh in UA) or iPhone/iPad/iPod,
+// including iPads that report as MacIntel with touch support
+var isApple =
+/Macintosh|Mac OS X|iPhone|iPod|iPad/i.test(ua) ||
+(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+if (isApple) {
+window.location.href = 'https://apps.apple.com/tt/app/pipoll-invest-in-humans/id6785708425';
+} else {
+window.location.href = 'https://play.google.com/store/apps/details?id=com.mycompany.humanstock&hl=en';
+}
+})();
+</script>
+</body>
+</html>
