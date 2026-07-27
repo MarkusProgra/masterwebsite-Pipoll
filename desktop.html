@@ -17,15 +17,26 @@ padding: 0;
 <script>
 (function () {
 var ua = navigator.userAgent || navigator.vendor || window.opera;
-// Apple: macOS (Macintosh in UA) or iPhone/iPad/iPod,
-// including iPads that report as MacIntel with touch support
-var isApple =
-/Macintosh|Mac OS X|iPhone|iPod|iPad/i.test(ua) ||
+
+var appleLink = 'https://apps.apple.com/tt/app/pipoll-invest-in-humans/id6785708425';
+var androidLink = 'https://play.google.com/store/apps/details?id=com.mycompany.humanstock&hl=en';
+
+// Mobile: iOS (iPhone/iPad/iPod, incl. iPads reporting as MacIntel with touch)
+var isIOS = /iPhone|iPod|iPad/i.test(ua) ||
 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-if (isApple) {
-window.location.href = 'https://apps.apple.com/tt/app/pipoll-invest-in-humans/id6785708425';
+// Mobile: Android
+var isAndroid = /android/i.test(ua);
+// Desktop: macOS
+var isMac = /Macintosh|Mac OS X/i.test(ua);
+
+if (isIOS) {
+window.location.href = appleLink;       // mobile iOS -> App Store
+} else if (isAndroid) {
+window.location.href = androidLink;     // mobile Android -> Play Store
+} else if (isMac) {
+window.location.href = appleLink;       // macOS desktop -> App Store
 } else {
-window.location.href = 'https://play.google.com/store/apps/details?id=com.mycompany.humanstock&hl=en';
+window.location.href = androidLink;     // anything else -> Play Store
 }
 })();
 </script>
