@@ -88,9 +88,16 @@
   var ua = navigator.userAgent || navigator.vendor || window.opera || '';
 
   var IOS_HTTPS   = 'https://apps.apple.com/pa/app/pipoll-goal-investing/id6785708425?l=en-GB';
-  var IOS_SCHEME  = 'itms-apps://apps.apple.com/pa/app/pipoll-goal-investing/id6785708425';
+  // x-safari-https:// kicks the URL out of the in-app webview into real Safari,
+  // which immediately hands apps.apple.com to the App Store.
+  var IOS_SAFARI  = 'x-safari-https://apps.apple.com/pa/app/pipoll-goal-investing/id6785708425?l=en-GB';
+  // itms-appss:// (double s) is the https App Store scheme — opens the store app directly.
+  var IOS_SCHEME  = 'itms-appss://apps.apple.com/pa/app/pipoll-goal-investing/id6785708425';
   var PLAY_HTTPS  = 'https://play.google.com/store/apps/details?id=com.mycompany.humanstock';
-  var PLAY_INTENT = 'intent://details?id=com.mycompany.humanstock#Intent;scheme=market;package=com.android.vending;end';
+  // intent:// with a browser_fallback_url: opens the Play Store app from Android
+  // webviews, and falls back to the https Play page if the handoff is refused.
+  var PLAY_INTENT = 'intent://details?id=com.mycompany.humanstock#Intent;scheme=market;package=com.android.vending;S.browser_fallback_url=' +
+                    encodeURIComponent(PLAY_HTTPS) + ';end';
   var WEB         = 'https://pipoll.live';
 
   var isIOS = /iPad|iPhone|iPod/i.test(ua) ||
@@ -102,77 +109,88 @@
   var hintEl = document.getElementById('hint');
   var cta = document.getElementById('cta');
 
-  // Primary target: what the tappable button points at (real user gesture = most reliable).
   var primary = WEB;
-  var secondary = null;
   var label = 'Open Pipoll';
 
   if (isIOS) {
     primary = IOS_HTTPS;
-    secondary = IOS_SCHEME;
     label = 'Get Pipoll on the App Store';
   } else if (isAndroid) {
-    // intent:// forces Android's in-app webview to hand off to the Play Store app.
     primary = inAppBrowser ? PLAY_INTENT : PLAY_HTTPS;
-    secondary = PLAY_HTTPS;
     label = 'Get Pipoll on Google Play';
   }
 
   cta.href = primary;
   cta.textContent = label;
 
-  // Track whether we actually left the page, so fallbacks don't fire after a successful hand-off.
+  // Track whether we actually left the page. Only trust signals that mean the
+  // page was really backgrounded — NOT `blur`, which Instagram's own overlays
+  // (like the "leave Instagram?" sheet) fire even when the user stays.
   var gone = false;
-  function markGone() { gone = true; }
   document.addEventListener('visibilitychange', function () {
-    if (document.hidden) markGone();
+    if (document.hidden) { gone = true; }
+    else { gone = false; } // user came back (e.g. cancelled the leave dialog) — re-arm fallbacks
   });
-  window.addEventListener('pagehide', markGone);
-  window.addEventListener('blur', markGone);
+  window.addEventListener('pagehide', function () { gone = true; });
 
   function go(url) {
     if (gone || !url) return;
-    try { window.location.replace(url); }
-    catch (e) { window.location.href = url; }
+    try { window.location.href = url; }
+    catch (e) {}
   }
 
   function showManual() {
     if (gone) return;
-    statusEl.textContent = 'Almost there.';
-    cta.textContent = label;
+    statusEl.textContent = 'Tap below to get the app';
     hintEl.textContent = inAppBrowser
       ? (isIOS
-          ? 'If nothing opens, tap the \u22EF menu at the top right and choose "Open in external browser".'
-          : 'If nothing opens, tap the \u22EE menu at the top right and choose "Open in Chrome".')
+          ? 'If nothing opens, tap the ⋯ menu at the top right and choose "Open in external browser".'
+          : 'If nothing opens, tap the ⋮ menu at the top right and choose "Open in Chrome".')
       : 'If nothing opens, tap the button above.';
     hintEl.className = 'hint show';
   }
 
+  // ---- iOS + in-app browser (Instagram etc.) ----
+  // WKWebView only allows App Store handoffs from a REAL user tap, so the
+  // button is the reliable path. On tap, run an escape ladder while the
+  // gesture is still fresh: Safari escape -> store scheme -> plain https.
+  if (isIOS && inAppBrowser) {
+    // Don't pretend an auto-redirect is coming — surface the button right away.
+    statusEl.textContent = 'Tap below to get the app';
+
+    cta.addEventListener('click', function (e) {
+      e.preventDefault();
+      gone = false;
+      go(IOS_SAFARI);                                   // 1) escape to real Safari
+      setTimeout(function () { go(IOS_SCHEME); }, 900); // 2) App Store scheme
+      setTimeout(function () { go(IOS_HTTPS); }, 1900); // 3) plain https (worst case: store page in-place)
+      setTimeout(showManual, 2800);                     // 4) show the escape-hatch hint
+    });
+
+    // Opportunistic auto-attempt: most Instagram versions block it (no user
+    // gesture), but it's harmless — and it works in the ones that allow it.
+    window.addEventListener('load', function () {
+      setTimeout(function () { go(IOS_SAFARI); }, 250);
+      setTimeout(showManual, 1600);
+    });
+    return;
+  }
+
+  // ---- everywhere else (real browsers, Android in-app) ----
   function start() {
-    // 1) Synthetic click on the real anchor — in-app webviews honour anchor navigations
-    //    more often than a bare location assignment.
-    setTimeout(function () {
-      if (gone) return;
-      try { cta.click(); } catch (e) {}
-    }, 120);
-
-    // 2) Direct navigation as backup.
-    setTimeout(function () { go(primary); }, 500);
-
-    // 3) Scheme / plain-https backup (itms-apps on iOS, play https on Android).
-    setTimeout(function () { go(secondary); }, 1600);
-
-    // 4) Give up quietly and let the user tap.
+    setTimeout(function () { go(primary); }, 120);
+    if (isIOS) {
+      setTimeout(function () { go(IOS_SCHEME); }, 1400);
+    } else if (isAndroid) {
+      setTimeout(function () { go(PLAY_HTTPS); }, 1600);
+    }
     setTimeout(showManual, 2600);
   }
 
-  // Instagram's webview kills navigations that fire before the page has finished loading.
-  // Waiting for `load` (plus a paint) is the single biggest fix here.
   if (document.readyState === 'complete') {
     setTimeout(start, 60);
   } else {
     window.addEventListener('load', function () { setTimeout(start, 60); });
-    // Safety net in case `load` never fires in the webview.
     setTimeout(function () { if (!gone) start(); }, 2000);
   }
 })();
