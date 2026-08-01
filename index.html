@@ -151,27 +151,18 @@
   }
 
   // ---- iOS + in-app browser (Instagram etc.) ----
-  // WKWebView only allows App Store handoffs from a REAL user tap, so the
-  // button is the reliable path. On tap, run an escape ladder while the
-  // gesture is still fresh: Safari escape -> store scheme -> plain https.
+  // Instagram's webview honours exactly one thing reliably: a real tap on a
+  // plain anchor. Do NOT preventDefault, do NOT auto-redirect, do NOT try
+  // custom schemes first — any of those either consumes the tap's user
+  // gesture or leaves the webview in a half-started navigation that swallows
+  // the next tap. Just point the anchor at the App Store and step aside.
   if (isIOS && inAppBrowser) {
-    // Don't pretend an auto-redirect is coming — surface the button right away.
     statusEl.textContent = 'Tap below to get the app';
+    cta.href = IOS_HTTPS;
 
-    cta.addEventListener('click', function (e) {
-      e.preventDefault();
-      gone = false;
-      go(IOS_SAFARI);                                   // 1) escape to real Safari
-      setTimeout(function () { go(IOS_SCHEME); }, 900); // 2) App Store scheme
-      setTimeout(function () { go(IOS_HTTPS); }, 1900); // 3) plain https (worst case: store page in-place)
-      setTimeout(showManual, 2800);                     // 4) show the escape-hatch hint
-    });
-
-    // Opportunistic auto-attempt: most Instagram versions block it (no user
-    // gesture), but it's harmless — and it works in the ones that allow it.
-    window.addEventListener('load', function () {
-      setTimeout(function () { go(IOS_SAFARI); }, 250);
-      setTimeout(showManual, 1600);
+    // If the tap somehow didn't take us anywhere, surface the escape hint.
+    cta.addEventListener('click', function () {
+      setTimeout(showManual, 2500);
     });
     return;
   }
