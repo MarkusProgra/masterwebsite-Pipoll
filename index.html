@@ -123,6 +123,26 @@
   cta.href = primary;
   cta.textContent = label;
 
+  // ---- per-file click tracking (public counter API, no account needed) ----
+  // The link name is this file's own name: /alex.html -> "alex". Copies of
+  // this file need no edits — each one reports under its own filename.
+  var COUNTER_NS = 'pipoll-links-25d18bb7';
+  var linkName = (location.pathname.split('/').pop() || '')
+    .replace(/\.html?$/i, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, '') || 'direct';
+
+  function track(kind) {
+    try {
+      // keepalive: the request survives the page navigating away to the store
+      fetch('https://abacus.jasoncameron.dev/hit/' + COUNTER_NS + '/' +
+            linkName + '-' + kind, { keepalive: true }).catch(function () {});
+    } catch (e) {}
+  }
+
+  track('views');
+  cta.addEventListener('click', function () { track('clicks'); });
+
   // Track whether we actually left the page. Only trust signals that mean the
   // page was really backgrounded — NOT `blur`, which Instagram's own overlays
   // (like the "leave Instagram?" sheet) fire even when the user stays.
