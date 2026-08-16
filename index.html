@@ -88,14 +88,12 @@
   var ua = navigator.userAgent || navigator.vendor || window.opera || '';
 
   var IOS_HTTPS   = 'https://apps.apple.com/pa/app/pipoll-goal-investing/id6785708425?l=en-GB';
-  // x-safari-https:// kicks the URL out of the in-app webview into real Safari,
-  // which immediately hands apps.apple.com to the App Store.
+  // Last-resort escape hatch: kicks the URL out of the webview into real Safari.
+  // Only fired if the plain https navigation visibly did nothing.
   var IOS_SAFARI  = 'x-safari-https://apps.apple.com/pa/app/pipoll-goal-investing/id6785708425?l=en-GB';
-  // itms-appss:// (double s) is the https App Store scheme — opens the store app directly.
-  var IOS_SCHEME  = 'itms-appss://apps.apple.com/pa/app/pipoll-goal-investing/id6785708425';
   var PLAY_HTTPS  = 'https://play.google.com/store/apps/details?id=com.mycompany.humanstock';
-  // intent:// with a browser_fallback_url: opens the Play Store app from Android
-  // webviews, and falls back to the https Play page if the handoff is refused.
+  // intent:// opens the Play Store app from Android webviews, falling back to
+  // the https Play page if the handoff is refused.
   var PLAY_INTENT = 'intent://details?id=com.mycompany.humanstock#Intent;scheme=market;package=com.android.vending;S.browser_fallback_url=' +
                     encodeURIComponent(PLAY_HTTPS) + ';end';
   var WEB         = 'https://pipoll.live';
@@ -106,8 +104,8 @@
   var inAppBrowser = /Instagram|FBAN|FBAV|FB_IAB|FBIOS|Messenger|Line\/|TikTok|Snapchat|Twitter|Pinterest|LinkedInApp/i.test(ua);
 
   var statusEl = document.getElementById('status');
-  var hintEl = document.getElementById('hint');
-  var cta = document.getElementById('cta');
+  var hintEl   = document.getElementById('hint');
+  var cta      = document.getElementById('cta');
 
   var primary = WEB;
   var label = 'Open Pipoll';
@@ -123,9 +121,8 @@
   cta.href = primary;
   cta.textContent = label;
 
-  // ---- per-file click tracking (public counter API, no account needed) ----
-  // The link name is this file's own name: /alex.html -> "alex". Copies of
-  // this file need no edits — each one reports under its own filename.
+  // ---- per-file click tracking ----
+  // Link name is this file's own name: /alex.html -> "alex". Copies need no edits.
   var COUNTER_NS = 'pipoll-links-25d18bb7';
   var linkName = (location.pathname.split('/').pop() || '')
     .replace(/\.html?$/i, '')
@@ -134,7 +131,7 @@
 
   function track(kind) {
     try {
-      // keepalive: the request survives the page navigating away to the store
+      // keepalive: survives the page navigating away to the store
       fetch('https://abacus.jasoncameron.dev/hit/' + COUNTER_NS + '/' +
             linkName + '-' + kind, { keepalive: true }).catch(function () {});
     } catch (e) {}
@@ -143,20 +140,22 @@
   track('views');
   cta.addEventListener('click', function () { track('clicks'); });
 
-  // Track whether we actually left the page. Only trust signals that mean the
-  // page was really backgrounded — NOT `blur`, which Instagram's own overlays
-  // (like the "leave Instagram?" sheet) fire even when the user stays.
+  // ---- did we actually leave? ----
+  // Once the page is truly backgrounded we stop firing fallbacks for good.
+  // Deliberately ignores `blur`, which Instagram's own overlays fire while
+  // the user is still on the page.
   var gone = false;
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) { gone = true; }
-    else { gone = false; } // user came back (e.g. cancelled the leave dialog) — re-arm fallbacks
   });
   window.addEventListener('pagehide', function () { gone = true; });
 
+  // replace() instead of href: keeps this page out of history, so Back
+  // returns to Instagram rather than trapping the user in a redirect loop.
   function go(url) {
     if (gone || !url) return;
-    try { window.location.href = url; }
-    catch (e) {}
+    try { location.replace(url); }
+    catch (e) { try { location.href = url; } catch (e2) {} }
   }
 
   function showManual() {
@@ -164,46 +163,31 @@
     statusEl.textContent = 'Tap below to get the app';
     hintEl.textContent = inAppBrowser
       ? (isIOS
-          ? 'If nothing opens, tap the ⋯ menu at the top right and choose "Open in external browser".'
-          : 'If nothing opens, tap the ⋮ menu at the top right and choose "Open in Chrome".')
+          ? 'If nothing opens, tap the \u22EF menu at the top right and choose "Open in external browser".'
+          : 'If nothing opens, tap the \u22EE menu at the top right and choose "Open in Chrome".')
       : 'If nothing opens, tap the button above.';
     hintEl.className = 'hint show';
   }
 
-  // ---- iOS + in-app browser (Instagram etc.) ----
-  // Instagram's webview honours exactly one thing reliably: a real tap on a
-  // plain anchor. Do NOT preventDefault, do NOT auto-redirect, do NOT try
-  // custom schemes first — any of those either consumes the tap's user
-  // gesture or leaves the webview in a half-started navigation that swallows
-  // the next tap. Just point the anchor at the App Store and step aside.
-  if (isIOS && inAppBrowser) {
-    statusEl.textContent = 'Tap below to get the app';
-    cta.href = IOS_HTTPS;
-
-    // If the tap somehow didn't take us anywhere, surface the escape hint.
-    cta.addEventListener('click', function () {
-      setTimeout(showManual, 2500);
-    });
-    return;
-  }
-
-  // ---- everywhere else (real browsers, Android in-app) ----
   function start() {
-    setTimeout(function () { go(primary); }, 120);
-    if (isIOS) {
-      setTimeout(function () { go(IOS_SCHEME); }, 1400);
-    } else if (isAndroid) {
-      setTimeout(function () { go(PLAY_HTTPS); }, 1600);
+    // 1. Immediate plain https navigation. This is what actually works,
+    //    including inside Instagram's iOS webview.
+    go(primary);
+
+    // 2. Escape hatches, only if step 1 left us sitting here.
+    if (isIOS && inAppBrowser) {
+      setTimeout(function () { go(IOS_SAFARI); }, 1500);
+    } else if (isAndroid && !inAppBrowser) {
+      setTimeout(function () { go(PLAY_HTTPS); }, 1500);
     }
+
+    // 3. Manual tap target.
     setTimeout(showManual, 2600);
   }
 
-  if (document.readyState === 'complete') {
-    setTimeout(start, 60);
-  } else {
-    window.addEventListener('load', function () { setTimeout(start, 60); });
-    setTimeout(function () { if (!gone) start(); }, 2000);
-  }
+  // Script sits at the end of <body>, so the DOM is ready. Fire now rather
+  // than waiting on `load` — images and the tracking fetch just add delay.
+  setTimeout(start, 50);
 })();
 </script>
 </body>
